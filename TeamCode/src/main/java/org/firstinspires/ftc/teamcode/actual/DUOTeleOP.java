@@ -42,7 +42,7 @@ public class DUOTeleOP extends LinearOpMode {
 
     public static double OPEN = 0;
     public static double CLOSE = 0.15;
-    public static double RAMP = 0.66;
+    public static double RAMP = 0.45;
 
     // ===== FIELD =====
     public static double StartX = 6.5;
@@ -58,75 +58,47 @@ public class DUOTeleOP extends LinearOpMode {
     public static double turmin = 0.0;
     public static double turmax = 1.0;
 
-    public static double lgoalX = 61;
+    public double lgoalX;
     public static double lgoalY = 84;
 
-    public static double rgoalX = 61;
+    public double rgoalX;
     public static double rgoalY = 60;
 
-    public static double goalX;
-    public static double goalY;
-    public static double d1 = 20;
-    public static double d2 = 22.5;
-    public static double d3 = 25;
-    public static double d4 = 27.5;
-    public static double d5 = 30;
-    public static double d6 = 32.5;
-    public static double d7 = 35;
-    public static double d8 = 37.5;
-    public static double d9 = 40;
-    public static double d10 = 42.5;
-    public static double d11 = 45;
-    public static double d12 = 47.5;
-    public static double d13 = 50;
-    public static double d14 = 52.5;
-    public static double d15 = 55;
-    public static double d16 = 57.5;
-    public static double d17 = 60;
-    public static double d18 = 62.5;
-    public static double d19 = 65;
-    public static double d20 = 67.5;
-    public static double d21 = 70;
-    public static double d22 = 72.5;
-    public static double d23 = 75;
-    public static double d24 = 77.5;
-    public static double d25 = 80;
-    public static double d26 = 82.5;
-    public static double d27 = 85;
-    public static double d28 = 87.5;
-    public static double d29 = 90;
+    public static double cgoalX = 60;
+    public static double mgoalX = 58;
+    public static double fgoalX = 58;
+
+    public double goalX;
+    public double goalY;
+    public static double d1 = 30;
+    public static double d2 = 35;
+    public static double d3 = 40;
+    public static double d4 = 45;
+    public static double d5 = 50;
+    public static double d6 = 55;
+    public static double d7 = 60;
+    public static double d8 = 65;
+    public static double d9 = 70;
+    public static double d10 = 75;
+    public static double d11 = 80;
+    public static double d12 = 85;
+    public static double d13 = 90;
 
 
 
-    public static double v1 = 1475;
-    public static double v2 = 1500;
-    public static double v3 = 1515;
-    public static double v4 = 1515;
-    public static double v5 = 1515;
-    public static double v6 = 1520;
+    public static double v1 = 1490;
+    public static double v2 = 1490;
+    public static double v3 = 1490;
+    public static double v4 = 1490;
+    public static double v5 = 1495;
+    public static double v6 = 1515;
     public static double v7 = 1520;
-    public static double v8 = 1520;
-    public static double v9 = 1520;
-    public static double v10 = 1520;
-    public static double v11 = 1525;
-    public static double v12 = 1525;
-    public static double v13 = 1525;
-    public static double v14 = 1530;
-    public static double v15 = 1535;
-    public static double v16 = 1545;
-    public static double v17 = 1545;
-    public static double v18 = 1550;
-    public static double v19 = 1550;
-    public static double v20 = 1550;
-    public static double v21 = 1555;
-    public static double v22 = 1555;
-    public static double v23 = 1555;
-    public static double v24 = 1560;
-    public static double v25 = 1560;
-    public static double v26 = 1560;
-    public static double v27 = 1565;
-    public static double v28 = 1565;
-    public static double v29 = 1565;
+    public static double v8 = 1525;
+    public static double v9 = 1525;
+    public static double v10 = 1530;
+    public static double v11 = 1530;
+    public static double v12 = 1535;
+    public static double v13 = 1540;
     public static int LEFT_TAG = 35;
     public static int RIGHT_TAG = 32;
     public int AIM;
@@ -145,7 +117,7 @@ public class DUOTeleOP extends LinearOpMode {
     private double angleToServo(double angle) {
         angle = normalize(angle);
 
-        double range = Math.toRadians(270); // servo range
+        double range = Math.toRadians(320); // servo range
         double servo = 0.5 + (angle / range);
 
         return Range.clip(servo, 0.0, 1.0);
@@ -156,19 +128,13 @@ public class DUOTeleOP extends LinearOpMode {
         double[] distances = {
                 d1, d2, d3, d4, d5,
                 d6, d7, d8, d9, d10,
-                d11, d12, d13, d14, d15,
-                d16, d17, d18, d19, d20,
-                d21, d22, d23, d24, d25,
-                d26, d27, d28, d29
+                d11, d12, d13
         };
 
         double[] velocities = {
                 v1, v2, v3, v4, v5,
                 v6, v7, v8, v9, v10,
-                v11, v12, v13, v14, v15,
-                v16, v17, v18, v19, v20,
-                v21, v22, v23, v24, v25,
-                v26, v27, v28, v29
+                v11, v12, v13
         };
 
         // ниже минимума
@@ -464,10 +430,24 @@ public class DUOTeleOP extends LinearOpMode {
 
             if (robotY > 72) {
                 AIM = LEFT_TAG;
+                if (robotX > 48 && robotX < 72) {
+                    lgoalX = mgoalX;
+                } else if (robotX < 48) {
+                    lgoalX = cgoalX;
+                } else if (robotX > 72) {
+                    lgoalX = fgoalX;
+                }
                 goalX = lgoalX;
                 goalY = lgoalY;
             } else if (robotY < 72) {
                 AIM = RIGHT_TAG;
+                if (robotX > 48 && robotX < 72) {
+                    rgoalX = mgoalX;
+                } else if (robotX < 48) {
+                    rgoalX = cgoalX;
+                } else if (robotX > 72) {
+                    rgoalX = fgoalX;
+                }
                 goalX = rgoalX;
                 goalY = rgoalY;
             }
