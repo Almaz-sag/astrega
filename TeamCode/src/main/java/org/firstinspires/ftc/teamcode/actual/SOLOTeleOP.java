@@ -15,6 +15,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.tuning.LimeLightHelper;
 
+import com.qualcomm.robotcore.hardware.ServoImplEx;
+import com.qualcomm.robotcore.hardware.PwmControl;
+
+
+
 @Config
 @TeleOp(name = "SOLO TeleOP", group = "Drive")
 public class SOLOTeleOP extends LinearOpMode {
@@ -33,7 +38,7 @@ public class SOLOTeleOP extends LinearOpMode {
 
     // ===== LAUNCHER PID =====
     public static double kP = 0.005;
-    public static double kI = 0.001125;
+    public static double kI = 0.0015;
     public static double kD = 0.000000000000001;
 
     private double integral = 0, lastError = 0;
@@ -48,8 +53,8 @@ public class SOLOTeleOP extends LinearOpMode {
     public static double StartX = 6.5;
     public static double StartY = 7;
 
-    double parY = 5.038070866;
-    double perpX = -2.96708661;
+    public static double parY = 5.038070866;
+    public static double perpX = -2.96708661;
 
     public static double turretOffsetX = 0.23531496; // inches вперед
     public static double turretOffsetY = 0; // если по центру
@@ -64,9 +69,9 @@ public class SOLOTeleOP extends LinearOpMode {
     public double rgoalX;
     public static double rgoalY = 60;
 
-    public static double cgoalX = 60;
-    public static double mgoalX = 58;
-    public static double fgoalX = 58;
+    public static double cgoalX = 62;
+    public static double mgoalX = 60;
+    public static double fgoalX = 57;
 
     public double goalX;
     public double goalY;
@@ -86,23 +91,25 @@ public class SOLOTeleOP extends LinearOpMode {
 
 
 
-    public static double v1 = 1490;
-    public static double v2 = 1490;
-    public static double v3 = 1490;
-    public static double v4 = 1490;
-    public static double v5 = 1495;
-    public static double v6 = 1515;
-    public static double v7 = 1520;
-    public static double v8 = 1525;
-    public static double v9 = 1525;
-    public static double v10 = 1530;
-    public static double v11 = 1530;
-    public static double v12 = 1535;
-    public static double v13 = 1540;
+    public static double v1 = 1450;
+    public static double v2 = 1450;
+    public static double v3 = 1450;
+    public static double v4 = 1450;
+    public static double v5 = 1450;
+    public static double v6 = 1460;
+    public static double v7 = 1465;
+    public static double v8 = 1490;
+    public static double v9 = 1490;
+    public static double v10 = 1510;
+    public static double v11 = 1510;
+    public static double v12 = 1515;
+    public static double v13 = 1520;
     public static int LEFT_TAG = 35;
     public static int RIGHT_TAG = 32;
     public int AIM;
     private boolean track = true;
+
+    public static int dega = 270;
 
     private double normalize(double a) {
         while (a > Math.PI)
@@ -114,15 +121,16 @@ public class SOLOTeleOP extends LinearOpMode {
         return a;
     }
 
+    public static double centerOffsetDeg = -1.5;
+
     private double angleToServo(double angle) {
         angle = normalize(angle);
 
-        double range = Math.toRadians(320); // servo range
-        double servo = 0.5 + (angle / range);
+        double range = Math.toRadians(dega);
+        double servo = 0.5 + (angle / range) + Math.toRadians(centerOffsetDeg) / range;
 
         return Range.clip(servo, 0.0, 1.0);
     }
-
     public double getVelocityFromTable(double distance) {
 
         double[] distances = {
@@ -408,6 +416,9 @@ public class SOLOTeleOP extends LinearOpMode {
         telemetry.addLine("for 3-5 seconds");
         telemetry.update();
 
+        ((ServoImplEx) tur1).setPwmRange(new PwmControl.PwmRange(500, 2500));
+        ((ServoImplEx) tur2).setPwmRange(new PwmControl.PwmRange(500, 2500));
+
         waitForStart();
 
         pinpoint.setPosition(startPose);
@@ -531,7 +542,7 @@ public class SOLOTeleOP extends LinearOpMode {
 
 
             if(track){
-                targetVelocity = getVelocityFromTable(distance) * 1.5;
+                targetVelocity = Math.round(getVelocityFromTable(distance) * 1.5);
                 updateTurret();
             } else {
                 targetVelocity = 1520 * 1.5;

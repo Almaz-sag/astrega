@@ -19,6 +19,9 @@ import com.qualcomm.robotcore.util.Range;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.tuning.LimeLightHelper;
 
+import com.qualcomm.robotcore.hardware.ServoImplEx;
+import com.qualcomm.robotcore.hardware.PwmControl;
+
 @Autonomous(name= "AUTON UP")
 public class AUTONUP extends LinearOpMode {
 
@@ -40,11 +43,11 @@ public class AUTONUP extends LinearOpMode {
     volatile boolean pos4 = false;
     volatile boolean pos5 = false;
 
-    public static double turPos1 = 0.3;
-    public static double turPos2 = 0.835;
-    public static double turPos3 = 1;
-    public static double turPos4 = 0.67;
-    public static double turPos5 = 0.73;
+    public static double turPos1 = 0.88;
+    public static double turPos2 = 0.64;
+    public static double turPos3 = 0.5;
+    public static double turPos4 = 0.25;
+    public static double turPos5 = 0.12;
 
     private boolean shooting = false;
 
@@ -85,7 +88,7 @@ public class AUTONUP extends LinearOpMode {
         limelight =
                 new LimeLightHelper(hardwareMap);
 
-        launcher.setDirection(
+        launcher2.setDirection(
                 DcMotorSimple.Direction.REVERSE
         );
 
@@ -99,7 +102,10 @@ public class AUTONUP extends LinearOpMode {
 
         tur1.setPosition(0.5);
         tur2.setPosition(0.5);
-        ramp2.setPosition(0.66);
+        ramp2.setPosition(0.45);
+
+        ((ServoImplEx) tur1).setPwmRange(new PwmControl.PwmRange(500, 2500));
+        ((ServoImplEx) tur2).setPwmRange(new PwmControl.PwmRange(500, 2500));
 
         waitForStart();
 
@@ -172,35 +178,68 @@ public class AUTONUP extends LinearOpMode {
 
         Actions.runBlocking(
                 drive.actionBuilder(new Pose2d(0, 0, 0))
-                        .stopAndAdd(new LauncherCmd(1550))
+                        .stopAndAdd(new LauncherCmd(1460 * 1.5))
+                        .stopAndAdd(new TPos5(true))
                         .waitSeconds(2)
                         .stopAndAdd(new Stopper(stopper, 0))
                         .waitSeconds(0.1)
                         .stopAndAdd(new Intake(intake1, intake2, 1))
                         .waitSeconds(0.5)
                         .stopAndAdd(new Stopper(stopper, 0.15))
-                        .stopAndAdd(new Intake(intake1, intake2, 0))
-                        .strafeToLinearHeading(new Vector2d(5, 11), Math.toRadians(105))
-                        .stopAndAdd(new Intake(intake1, intake2, 1))
-                        .strafeToLinearHeading(new Vector2d(-7, 43), Math.toRadians(135))
-                        .waitSeconds(1.5)
-                        .strafeToLinearHeading(new Vector2d(10, 36), Math.toRadians(120))
-                        .strafeToLinearHeading(new Vector2d(0, 43), Math.toRadians(180))
-                        .waitSeconds(1.5)
-                        .strafeToLinearHeading(new Vector2d(10, 24), Math.toRadians(90))
+                        .strafeTo(new Vector2d(10, 0))
+                        .strafeToLinearHeading(new Vector2d(16, -5), Math.toRadians(35))
+                        .strafeToLinearHeading(new Vector2d(30, -5), Math.toRadians(60))
+                        .strafeToLinearHeading(new Vector2d(33, -15), Math.toRadians(90))
+                        .strafeToLinearHeading(new Vector2d(33, 0), Math.toRadians(90))
+                        .waitSeconds(0.5)
+                        .strafeToLinearHeading(new Vector2d(10, -2), Math.toRadians(0))
                         .stopAndAdd(new Intake(intake1, intake2, 0))
                         .strafeToLinearHeading(new Vector2d(0, 0), Math.toRadians(0))
-                        .waitSeconds(2)
+                        .waitSeconds(0.5)
                         .stopAndAdd(new Stopper(stopper, 0))
                         .waitSeconds(0.1)
                         .stopAndAdd(new Intake(intake1, intake2, 1))
                         .waitSeconds(0.5)
                         .stopAndAdd(new Stopper(stopper, 0.15))
                         .stopAndAdd(new Intake(intake1, intake2, 0))
-                        .strafeToLinearHeading(new Vector2d(10, 24), Math.toRadians(0))
-                        .strafeToLinearHeading(new Vector2d(43, 26), Math.toRadians(0))
-                        .strafeToLinearHeading(new Vector2d(100, 24), Math.toRadians(-90))
-                        .strafeToLinearHeading(new Vector2d(100, 40), Math.toRadians(-90))
+                        .strafeTo(new Vector2d(16.4, -24))
+                        .stopAndAdd(new TPos5(false))
+                        .stopAndAdd(new Stopper(ramp2, 1))
+                        .strafeTo(new Vector2d(18, -42))
+                        .stopAndAdd(new TPos1(true))
+                        .stopAndAdd(new Intake(intake1, intake2, 1))
+                        .strafeTo(new Vector2d(28, -42))
+                        .waitSeconds(2)
+                        .stopAndAdd(new Intake(intake1, intake2, 0))
+                        .stopAndAdd(new LauncherCmd(1460 * 1.5))
+                        .strafeToLinearHeading(new Vector2d(10, -90),Math.toRadians(90))
+                        .stopAndAdd(new Stopper(ramp2, 0.45))
+                        .strafeToLinearHeading(new Vector2d(10, -117),Math.toRadians(180))
+                        .waitSeconds(0.5)
+                        .stopAndAdd(new Stopper(stopper, 0))
+                        .waitSeconds(0.1)
+                        .stopAndAdd(new Intake(intake1, intake2, 1))
+                        .waitSeconds(0.5)
+                        .stopAndAdd(new Stopper(stopper, 0.15))
+                        .stopAndAdd(new Intake(intake1, intake2, 0))
+                        .strafeToLinearHeading(new Vector2d(-6.8, -110),Math.toRadians(270))
+                        .stopAndAdd(new Stopper(ramp2, 1))
+                        .stopAndAdd(new Intake(intake1, intake2, 1))
+                        .strafeToLinearHeading(new Vector2d(-6.8, -128),Math.toRadians(270))
+                        .waitSeconds(2)
+                        .strafeToLinearHeading(new Vector2d(-6.8, -110),Math.toRadians(270))
+                        .stopAndAdd(new Intake(intake1, intake2, 0))
+                        .stopAndAdd(new Stopper(ramp2, 0.45))
+                        .strafeToLinearHeading(new Vector2d(0, -117),Math.toRadians(0))
+                        .waitSeconds(0.5)
+                        .stopAndAdd(new Stopper(stopper, 0))
+                        .waitSeconds(0.1)
+                        .stopAndAdd(new Intake(intake1, intake2, 1))
+                        .waitSeconds(0.5)
+                        .stopAndAdd(new Stopper(stopper, 0.15))
+                        .stopAndAdd(new Intake(intake1, intake2, 0))
+                        .strafeToLinearHeading(new Vector2d(10, -120),Math.toRadians(-90))
+                        .strafeToLinearHeading(new Vector2d(24, -120),Math.toRadians(-180))
                         .build()
         );
     }
@@ -212,7 +251,7 @@ public class AUTONUP extends LinearOpMode {
         double targetVelocity = 0;
 
         public double kP = 0.005;
-        public double kI = 0.001125;
+        public double kI = 0.0015;
         public double kD = 0.000000000000001;
 
         double integral = 0;
