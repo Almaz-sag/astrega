@@ -172,18 +172,7 @@ public class AUTONDOWN extends LinearOpMode {
 
         Actions.runBlocking(
                 drive.actionBuilder(new Pose2d(0, 0, 0))
-                        .stopAndAdd(new LauncherCmd(1525))
-                        .waitSeconds(7)
-                        .stopAndAdd(new Stopper(stopper, 0))
-                        .waitSeconds(0.1)
-                        .stopAndAdd(new Intake(intake1, intake2, 1))
-                        .waitSeconds(0.5)
-                        .stopAndAdd(new Stopper(stopper, 0.15))
-                        .stopAndAdd(new Intake(intake1, intake2, 0))
-                        .strafeToLinearHeading(new Vector2d(10, 0), Math.toRadians(90))
-                        .stopAndAdd(new Intake(intake1, intake2, 1))
-                        .strafeToLinearHeading(new Vector2d(12, -50), Math.toRadians(90))
-                        .strafeToLinearHeading(new Vector2d(7, -58), Math.toRadians(90))
+                        .strafeTo(new Vector2d(2,-12))
                         .build()
         );
     }
