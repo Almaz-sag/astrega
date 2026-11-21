@@ -1,0 +1,624 @@
+package org.firstinspires.ftc.teamcode.actual;
+
+import androidx.annotation.NonNull;
+
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.acmerobotics.roadrunner.Action;
+import com.acmerobotics.roadrunner.Pose2d;
+import com.acmerobotics.roadrunner.Vector2d;
+import com.acmerobotics.roadrunner.ftc.Actions;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
+import com.qualcomm.robotcore.util.Range;
+
+import org.firstinspires.ftc.teamcode.MecanumDrive;
+import org.firstinspires.ftc.teamcode.tuning.LimeLightHelper;
+
+import com.qualcomm.robotcore.hardware.ServoImplEx;
+import com.qualcomm.robotcore.hardware.PwmControl;
+
+@Config
+@Autonomous(name= "AUTON UP F")
+public class AUTONUPF extends LinearOpMode {
+
+    private DcMotorEx launcher;
+    private DcMotorEx launcher2;
+    private DcMotor intake1;
+    private DcMotor intake2;
+
+    private Servo tur1, tur2, ramp2;
+    private Servo stopper;
+
+    private LauncherPID launcherPID;
+    private LimeLightHelper limelight;
+    volatile boolean limeEnabled = false;
+
+    volatile boolean pos1 = false;
+    volatile boolean pos2 = false;
+    volatile boolean pos3 = false;
+    volatile boolean pos4 = false;
+    volatile boolean pos5 = false;
+
+    public static double turPos1 = 0.26;
+    public static double turPos2 = 0.30525;
+    public static double turPos3 = 0.5;
+    public static double turPos4 = 0.75;
+    public static double turPos5 = 0.095;
+
+    // ===== LAUNCHER PIDF =====
+    // (скопируй сюда значения, которые подобрал в SOLOTeleOPF)
+    public static double kF = 0.000365;
+    public static double kP = 0.004;
+    public static double kI = 0.0;
+    public static double kD = 0.0;
+    public static double filterAlpha = 0;   // сглаживание скорости
+    public static double iMax = 0.15;       // лимит интеграла (в мощности)
+    public static double iZone = 150;       // интеграл копится только при малой ошибке
+    public static double nominalVoltage = 13.0; // та же, что в SOLOTeleOPF, после подбора kF не менять
+
+    private boolean shooting = false;
+
+    public static double Lo = 0;
+
+    private boolean Lo1 = false;
+
+    @Override
+    public void runOpMode() throws InterruptedException {
+
+        MecanumDrive drive =
+                new MecanumDrive(hardwareMap, new Pose2d(0, 0, 0));
+
+        launcher =
+                hardwareMap.get(DcMotorEx.class, "launcher");
+
+        launcher2 =
+                hardwareMap.get(DcMotorEx.class, "launcher2");
+
+        intake1 =
+                hardwareMap.get(DcMotor.class, "intake1");
+
+        intake2 =
+                hardwareMap.get(DcMotor.class, "intake2");
+
+        stopper =
+                hardwareMap.servo.get("stopper");
+
+        tur1 =
+                hardwareMap.servo.get("tur1");
+
+        tur2 =
+                hardwareMap.servo.get("tur2");
+
+        ramp2 =
+                hardwareMap.servo.get("ramp");
+
+        limelight =
+                new LimeLightHelper(hardwareMap);
+
+        launcher2.setDirection(
+                DcMotorSimple.Direction.REVERSE
+        );
+
+        intake2.setDirection(
+                DcMotorSimple.Direction.REVERSE
+        );
+        stopper.setPosition(0.15);
+
+        launcherPID =
+                new LauncherPID(launcher, launcher2);
+
+        tur1.setPosition(0.5);
+        tur2.setPosition(0.5);
+        ramp2.setPosition(0.4);
+
+        ((ServoImplEx) tur1).setPwmRange(new PwmControl.PwmRange(500, 2500));
+        ((ServoImplEx) tur2).setPwmRange(new PwmControl.PwmRange(500, 2500));
+
+        waitForStart();
+
+        if (Lo1) {
+            Lo = 5;
+        } else {
+            Lo = 0;
+        }
+
+        Thread pidThread = new Thread(() -> {
+
+            while (opModeIsActive()) {
+
+                launcherPID.update();
+
+                sleep(10);
+
+            }
+        });
+
+        pidThread.start();
+
+        Thread limeThread = new Thread(() -> {
+
+            while (opModeIsActive()) {
+
+                if (limeEnabled) {
+
+                    turretTrackByLimelight();
+
+                } else {
+
+                    if (pos1) {
+
+                        tur1.setPosition(turPos1);
+                        tur2.setPosition(turPos1);
+
+                    } else if (pos2) {
+
+                        tur1.setPosition(turPos2);
+                        tur2.setPosition(turPos2);
+
+                    } else if (pos3) {
+
+                        tur1.setPosition(turPos3);
+                        tur2.setPosition(turPos3);
+
+                    } else if(pos4){
+
+                        tur1.setPosition(turPos4);
+                        tur2.setPosition(turPos4);
+
+                    } else if(pos5){
+
+                        tur1.setPosition(turPos5);
+                        tur2.setPosition(turPos5);
+
+                    } else {
+
+                        tur1.setPosition(0.5);
+                        tur2.setPosition(0.5);
+                    }
+                }
+
+                sleep(20);
+            }
+        });
+
+        limeThread.start();
+
+        Actions.runBlocking(
+                drive.actionBuilder(new Pose2d(0, 0, 0))
+                        .stopAndAdd(new LauncherCmd(2150))
+                        .stopAndAdd(new TPos5(true))
+                        .waitSeconds(1.5)
+                        .stopAndAdd(new Stopper(stopper, 0))
+                        .waitSeconds(0.1)
+                        .stopAndAdd(new Intake(intake1, intake2, 1))
+                        .waitSeconds(0.5)
+                        .stopAndAdd(new Stopper(stopper, 0.15))
+                        .strafeTo(new Vector2d(10, 0))
+                        .strafeToLinearHeading(new Vector2d(16, -5), Math.toRadians(35))
+                        .stopAndAdd(new TPos5(false))
+                        .strafeToLinearHeading(new Vector2d(33, -5), Math.toRadians(60))
+                        .strafeToLinearHeading(new Vector2d(35, -15), Math.toRadians(90))
+                        .strafeToLinearHeading(new Vector2d(35.27, -3), Math.toRadians(90))
+                        .waitSeconds(0.7)
+                        .build()
+        );
+
+        drive.updatePoseEstimate();
+
+        Pose2d wallPose = new Pose2d(35.27, -2.2, Math.toRadians(90));
+        drive.localizer.setPose(wallPose);
+
+        Actions.runBlocking(
+                drive.actionBuilder(wallPose)
+                        .stopAndAdd(new LauncherCmd(2150))
+                        .strafeTo(new Vector2d(16.4, -24))
+                        .stopAndAdd(new TPos2(true))
+                        .strafeTo(new Vector2d(10, -90))
+                        .stopAndAdd(new Stopper(ramp2, 0.4))
+                        .strafeTo(new Vector2d(10, -117))
+                        .turnTo(Math.toRadians(180))
+                        .waitSeconds(0.2)
+                        .stopAndAdd(new Stopper(stopper, 0))
+                        .waitSeconds(0.1)
+                        .stopAndAdd(new Intake(intake1, intake2, 1))
+                        .waitSeconds(0.5)
+                        .stopAndAdd(new Stopper(stopper, 0.15))
+                        .stopAndAdd(new Intake(intake1, intake2, 0))
+                        .turnTo(Math.toRadians(270))
+                        .strafeTo(new Vector2d(-14, -110))
+                        .stopAndAdd(new Stopper(ramp2, 1))
+                        .stopAndAdd(new Intake(intake1, intake2, 1))
+                        .strafeTo(new Vector2d(-14, -126))
+                        .stopAndAdd(new TPos2(false))
+                        .stopAndAdd(new TPos1(true))
+                        .waitSeconds(1.5)
+                        .strafeTo(new Vector2d(-14, -110))
+                        .strafeTo(new Vector2d(-14, -126))
+                        .waitSeconds(1.5)
+                        .stopAndAdd(new LauncherCmd(2125))
+                        .strafeTo(new Vector2d(-14, -110))
+                        .stopAndAdd(new Intake(intake1, intake2, 0))
+                        .stopAndAdd(new Stopper(ramp2, 0.4))
+                        .strafeTo(new Vector2d(0, -117))
+                        .turnTo(Math.toRadians(180))
+                        .waitSeconds(0.2)
+                        .stopAndAdd(new Stopper(stopper, 0))
+                        .waitSeconds(0.1)
+                        .stopAndAdd(new Intake(intake1, intake2, 1))
+                        .waitSeconds(0.5)
+                        .stopAndAdd(new Stopper(stopper, 0.15))
+                        .stopAndAdd(new Intake(intake1, intake2, 0))
+                        .strafeTo(new Vector2d(10, -112.5))
+                        .stopAndAdd(new TPos1(false))
+                        .strafeTo(new Vector2d(24, -112.5))
+                        .build()
+        );
+    }
+
+    public class LauncherPID {
+
+        DcMotorEx launcher, launcher2;
+
+        // volatile: пишется из потока Actions, читается из pidThread
+        volatile double targetVelocity = 0;
+
+        double integral = 0;
+        double lastError = 0;
+        double filteredVel = 0;
+        double lastTarget = 0;
+        boolean first = true;
+
+        long lastTime = 0;
+
+        VoltageSensor battery;
+        double voltage = 12.0;
+        long lastVoltageRead = 0;
+
+        FtcDashboard dashboard =
+                FtcDashboard.getInstance();
+
+        public LauncherPID(
+                DcMotorEx m,
+                DcMotorEx m2
+        ) {
+
+            this.launcher = m;
+            this.launcher2 = m2;
+
+            launcher.setMode(
+                    DcMotor.RunMode.RUN_WITHOUT_ENCODER
+            );
+
+            launcher2.setMode(
+                    DcMotor.RunMode.RUN_WITHOUT_ENCODER
+            );
+
+            battery = hardwareMap.voltageSensor.iterator().next();
+            voltage = battery.getVoltage();
+        }
+
+        public void setTarget(double vel) {
+            this.targetVelocity = vel;
+        }
+
+        public void update() {
+
+            double target = targetVelocity;
+
+            double rawVelocity =
+                    launcher.getVelocity();
+
+            if (first) {
+                filteredVel = rawVelocity;
+                first = false;
+            } else {
+                filteredVel =
+                        filterAlpha * filteredVel
+                                + (1 - filterAlpha) * rawVelocity;
+            }
+
+            // при смене цели сбрасываем интеграл
+            if (Math.abs(target - lastTarget) > 50) {
+                integral = 0;
+            }
+            lastTarget = target;
+
+            double error =
+                    target - filteredVel;
+
+            long now = System.nanoTime();
+
+            double dt =
+                    (lastTime == 0)
+                            ? 0
+                            : (now - lastTime) / 1e9;
+
+            lastTime = now;
+
+            if (dt > 0) {
+                if (Math.abs(error) < iZone) {
+                    integral += error * dt * kI;
+                    integral = Range.clip(integral, -iMax, iMax);
+                } else {
+                    integral = 0;
+                }
+            }
+
+            double derivative =
+                    (dt > 0)
+                            ? (error - lastError) / dt
+                            : 0;
+
+            lastError = error;
+
+            // читаем напряжение раз в 100 мс и слегка сглаживаем
+            long nowMs = System.currentTimeMillis();
+            if (nowMs - lastVoltageRead > 100) {
+                voltage = 0.8 * voltage + 0.2 * battery.getVoltage();
+                lastVoltageRead = nowMs;
+            }
+
+            double voltageScale = nominalVoltage / Math.max(voltage, 8.0);
+
+            double output =
+                    kF * target * voltageScale
+                            + kP * error
+                            + integral
+                            + kD * derivative;
+
+            output =
+                    Range.clip(
+                            output,
+                            -1.0,
+                            1.0
+                    );
+
+            launcher.setPower(output);
+            launcher2.setPower(output);
+        }
+    }
+
+    public class LauncherCmd implements Action {
+
+        double vel;
+
+        public LauncherCmd(double v) {
+            this.vel = v;
+        }
+
+        @Override
+        public boolean run(
+                @NonNull TelemetryPacket telemetryPacket
+        ) {
+
+            launcherPID.setTarget(vel);
+
+            return false;
+        }
+    }
+
+    public void turretTrackByLimelight() {
+
+        double tx =
+                -limelight.getTx() +
+                        3.5 -
+                        Lo;
+
+        double deadzone = 0.7;
+
+        if (Math.abs(tx) < deadzone)
+            return;
+
+        double k = 0.0005;
+
+        double currentPos =
+                tur1.getPosition();
+
+        double newPos =
+                currentPos -
+                        tx * k;
+
+        newPos =
+                Range.clip(
+                        newPos,
+                        0.0,
+                        1.0
+                );
+
+        tur1.setPosition(newPos);
+        tur2.setPosition(newPos);
+    }
+
+    public class LimeCmd implements Action {
+
+        boolean enable;
+
+        public LimeCmd(boolean enable) {
+            this.enable = enable;
+        }
+
+        @Override
+        public boolean run(
+                @NonNull TelemetryPacket telemetryPacket
+        ) {
+
+            limeEnabled = enable;
+
+            return false;
+        }
+    }
+
+    public class Lo1 implements Action {
+
+        boolean enable;
+
+        public Lo1(boolean enable) {
+            this.enable = enable;
+        }
+
+        @Override
+        public boolean run(
+                @NonNull TelemetryPacket telemetryPacket
+        ) {
+
+            Lo1 = enable;
+
+            return false;
+        }
+    }
+
+    public class TPos1 implements Action {
+
+        boolean enable;
+
+        public TPos1(boolean enable) {
+            this.enable = enable;
+        }
+
+        @Override
+        public boolean run(
+                @NonNull TelemetryPacket telemetryPacket
+        ) {
+
+            pos1 = enable;
+
+            return false;
+        }
+    }
+
+    public class TPos2 implements Action {
+
+        boolean enable;
+
+        public TPos2(boolean enable) {
+            this.enable = enable;
+        }
+
+        @Override
+        public boolean run(
+                @NonNull TelemetryPacket telemetryPacket
+        ) {
+
+            pos2 = enable;
+
+            return false;
+        }
+    }
+
+    public class TPos3 implements Action {
+
+        boolean enable;
+
+        public TPos3(boolean enable) {
+            this.enable = enable;
+        }
+
+        @Override
+        public boolean run(
+                @NonNull TelemetryPacket telemetryPacket
+        ) {
+
+            pos3 = enable;
+
+            return false;
+        }
+    }
+
+    public class TPos4 implements Action {
+
+        boolean enable;
+
+        public TPos4(boolean enable) {
+            this.enable = enable;
+        }
+
+        @Override
+        public boolean run(
+                @NonNull TelemetryPacket telemetryPacket
+        ) {
+
+            pos4 = enable;
+
+            return false;
+        }
+    }
+
+    public class TPos5 implements Action {
+
+        boolean enable;
+
+        public TPos5(boolean enable) {
+            this.enable = enable;
+        }
+
+        @Override
+        public boolean run(
+                @NonNull TelemetryPacket telemetryPacket
+        ) {
+
+            pos5 = enable;
+
+            return false;
+        }
+    }
+
+    public class Stopper implements Action {
+
+        Servo servo;
+        double pos;
+
+        public Stopper(
+                Servo s,
+                double p
+        ) {
+
+            this.servo = s;
+            this.pos = p;
+        }
+
+        @Override
+        public boolean run(
+                @NonNull TelemetryPacket telemetryPacket
+        ) {
+
+            servo.setPosition(pos);
+
+            return false;
+        }
+    }
+
+    public class Intake implements Action {
+
+        DcMotor motor, motor2;
+        double pow;
+
+        public Intake(
+                DcMotor m,
+                DcMotor m2,
+                double p
+        ) {
+
+            this.motor = m;
+            this.motor2 = m2;
+            this.pow = p;
+        }
+
+        @Override
+        public boolean run(
+                @NonNull TelemetryPacket telemetryPacket
+        ) {
+
+            motor.setPower(-pow);
+            motor2.setPower(-pow);
+
+            return false;
+        }
+    }
+}
