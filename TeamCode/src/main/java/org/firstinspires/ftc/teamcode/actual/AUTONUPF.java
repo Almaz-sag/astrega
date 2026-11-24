@@ -25,7 +25,7 @@ import com.qualcomm.robotcore.hardware.ServoImplEx;
 import com.qualcomm.robotcore.hardware.PwmControl;
 
 @Config
-@Autonomous(name= "AUTON UP F")
+@Autonomous(name= "SPRAVA 2 TIPS + PARK(SLEVA)")
 public class AUTONUPF extends LinearOpMode {
 
     private DcMotorEx launcher;
@@ -46,8 +46,8 @@ public class AUTONUPF extends LinearOpMode {
     volatile boolean pos4 = false;
     volatile boolean pos5 = false;
 
-    public static double turPos1 = 0.26;
-    public static double turPos2 = 0.30525;
+    public static double turPos1 = 0.25;
+    public static double turPos2 = 0.294;
     public static double turPos3 = 0.5;
     public static double turPos4 = 0.75;
     public static double turPos5 = 0.095;
@@ -205,7 +205,7 @@ public class AUTONUPF extends LinearOpMode {
                         .stopAndAdd(new TPos5(false))
                         .strafeToLinearHeading(new Vector2d(33, -5), Math.toRadians(60))
                         .strafeToLinearHeading(new Vector2d(35, -15), Math.toRadians(90))
-                        .strafeToLinearHeading(new Vector2d(35.27, -3), Math.toRadians(90))
+                        .strafeToLinearHeading(new Vector2d(35.27, -4), Math.toRadians(90))
                         .waitSeconds(0.7)
                         .build()
         );
@@ -232,18 +232,18 @@ public class AUTONUPF extends LinearOpMode {
                         .stopAndAdd(new Stopper(stopper, 0.15))
                         .stopAndAdd(new Intake(intake1, intake2, 0))
                         .turnTo(Math.toRadians(270))
-                        .strafeTo(new Vector2d(-14, -110))
+                        .strafeTo(new Vector2d(-10, -110))
                         .stopAndAdd(new Stopper(ramp2, 1))
                         .stopAndAdd(new Intake(intake1, intake2, 1))
-                        .strafeTo(new Vector2d(-14, -126))
+                        .strafeTo(new Vector2d(-10, -126))
                         .stopAndAdd(new TPos2(false))
                         .stopAndAdd(new TPos1(true))
                         .waitSeconds(1.5)
-                        .strafeTo(new Vector2d(-14, -110))
-                        .strafeTo(new Vector2d(-14, -126))
+                        .strafeTo(new Vector2d(-12.5, -110))
+                        .strafeTo(new Vector2d(-12.5, -126))
                         .waitSeconds(1.5)
                         .stopAndAdd(new LauncherCmd(2125))
-                        .strafeTo(new Vector2d(-14, -110))
+                        .strafeTo(new Vector2d(-12.5, -110))
                         .stopAndAdd(new Intake(intake1, intake2, 0))
                         .stopAndAdd(new Stopper(ramp2, 0.4))
                         .strafeTo(new Vector2d(0, -117))
